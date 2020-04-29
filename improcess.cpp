@@ -3,6 +3,25 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
+#include <cmath>
+
+
+/*struct Window
+{
+  int size;
+  int center_x;
+  int center_y;
+  float* local_window;
+  Window(int size, int x, int y, float** image): size(size), center_x(x), center_y(y)
+  {
+    local_window = new float[size * size];
+    for(int i = size; i < ; i++)
+      {
+	local_window[i] = im
+      }
+  }
+};*/
+
 
 //For reading the pixel values from given file name
 float** fileToMatrix(std::string fileName, int& height, int& width)
@@ -100,6 +119,64 @@ float** linearScale(float** image, int height, int width, int max, int min)
   return scaledImage;
 }
 
+void insertionSort(float* window, int size)
+{
+  int i, key, j;  
+  for (i = 1; i < size; i++) 
+    {  
+      key = window[i];  
+      j = i - 1;  
+  
+      while (j >= 0 && window[j] > key) 
+        {  
+	  window[j + 1] = window[j];  
+	  j = j - 1;  
+        }  
+      window[j + 1] = key;  
+    }  
+}
+
+float getMedian(float* window, int size)
+{
+  insertionSort(window, size);
+  
+  return window[(size / 2)];
+}
+
+float** medianFilter(float** image, int height, int width, int k)
+{
+  /*float** medianFilteredImage = new float*[height];
+  for(int i = 0; i < height; i++)
+    {
+      medianFilteredImage[i] = new float[width];
+      }*/
+  float** medianFilteredImage(image);
+
+
+  int window_size = k*k;
+  float* window = new float[window_size];
+  for(int row = k/2; row <= height - k/2 - 1; row++)
+    {
+      for(int col = k/2; col <= width - k/2 - 1; col++)
+	{
+	  int w_index = 0;
+	  for(int i = -k/2; i <= k/2; i++)
+	    {
+	      for(int j = -k/2; j <= k/2; j++)
+		{
+		  window[w_index++] = image[row - i][col -j];
+		}
+	    }
+	  float median = getMedian(window, k*k);
+	  if(row == 5 && col == 0)
+	    std::cout << median << " " << "kek" << std::endl;
+	  medianFilteredImage[row][col] = median;
+	}
+    }
+
+  return medianFilteredImage;
+}
+
 
 //For saving the output after image processing is done
 void matrixToFile(std::string fileName, float** image, int height, int width)
@@ -127,10 +204,13 @@ int main(int argc, char** argv)
   int height, width, max = -1, min = 256;
 
   float** image = fileToMatrix(inFileName, height, width);
-  findMinAndMax(image, height, width, max, min);
-  float** linScaledImage = linearScale(image, height, width, max, min);
+
+  //findMinAndMax(image, height, width, max, min);
+  //float** linScaledImage = linearScale(image, height, width, max, min);
+
+  float** medianFilteredImage = medianFilter(image, height, width, 3);
   
-  matrixToFile(outFileName, linScaledImage, height, width);
+  matrixToFile(outFileName, medianFilteredImage, height, width);
 
   return 0;
 }
