@@ -1,3 +1,6 @@
 .out
-inp/
-out/
+406im
+cppinp/
+cppout/
+TestResults/
+pyout/

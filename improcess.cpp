@@ -3,31 +3,16 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
-#include <cmath>
+#include <math.h>
+#include <omp.h>
 
-
-/*struct Window
-{
-  int size;
-  int center_x;
-  int center_y;
-  float* local_window;
-  Window(int size, int x, int y, float** image): size(size), center_x(x), center_y(y)
-  {
-    local_window = new float[size * size];
-    for(int i = size; i < ; i++)
-      {
-	local_window[i] = im
-      }
-  }
-};*/
+#define PI 3.141527f
 
 
 //For reading the pixel values from given file name
-float** fileToMatrix(std::string fileName, int& height, int& width)
+void fileToMatrix(float** &image, std::string fileName, int& height, int& width)
 {
   std::ifstream imageFile(fileName);    
-  float** image;
   
   if(imageFile.is_open())
     {
@@ -61,7 +46,6 @@ float** fileToMatrix(std::string fileName, int& height, int& width)
 
   imageFile.close();
 
-  return image;
 }
 
 //For debug purposes
@@ -119,6 +103,34 @@ float** linearScale(float** image, int height, int width, int max, int min)
   return scaledImage;
 }
 
+float** par_linearScale(float** image, int height, int width, int max, int min)
+{
+  float** scaledImage = new float*[height];
+  for(int i = 0; i < height; i++)
+    {
+      scaledImage[i] = new float[width];
+    }
+
+  int a = -1*min;
+  float gmax = 255.0;
+  float b;
+  float u;
+
+#pragma omp parallel for collapse(2) private(u, b)
+  for(int i = 0; i < height; i++)
+    {
+      for(int j = 0; j < width; j++)
+	{
+	  u = image[i][j];
+	  b = gmax/(max - min);
+	  
+	  scaledImage[i][j] = b*(u + a);
+	}
+    }
+
+  return scaledImage;
+}
+
 void insertionSort(float* window, int size)
 {
   int i, key, j;  
@@ -143,18 +155,280 @@ float getMedian(float* window, int size)
   return window[(size / 2)];
 }
 
-float** medianFilter(float** image, int height, int width, int k)
+float** par_sobelFilterX(float** image, int height, int width)
 {
-  /*float** medianFilteredImage = new float*[height];
+  float** gradientX = new float*[height];
+  
   for(int i = 0; i < height; i++)
     {
-      medianFilteredImage[i] = new float[width];
-      }*/
-  float** medianFilteredImage(image);
+      gradientX[i] = new float[width];
+    }
+  
+  float x_filter[3][3];
 
+  x_filter[0][0] = -1;  x_filter[0][1] = 0; x_filter[0][2] = 1;
+  x_filter[1][0] = -2;  x_filter[1][1] = 0; x_filter[1][2] = 2; 
+  x_filter[2][0] = -1;  x_filter[2][1] = 0; x_filter[2][2] = 1; 
+
+  float local_result = 0.0;  
+#pragma omp parallel for collapse(2) firstprivate(local_result)
+  for(int i = 1; i < height - 1; i++)
+    {
+      for(int j = 1; j < width - 1; j++)
+	{
+	  for(int a = 0; a < 3; a++)
+	    {
+	      for(int b = 0; b < 3; b++)
+		{
+		  local_result = local_result + image[i - 1 + a][j - 1 + b] * x_filter[a][b];
+		}
+	    }	  
+	  if(local_result < 0) local_result = 0;
+	  if(local_result > 255) local_result = 255;
+	  gradientX[i][j] = local_result;
+	  local_result = 0.0;	  
+	}
+    }
+  
+  return gradientX;
+}
+
+float** sobelFilterX(float** image, int height, int width)
+{
+  float** gradientX = new float*[height];
+  
+  for(int i = 0; i < height; i++)
+    {
+      gradientX[i] = new float[width];
+    }
+  
+  float x_filter[3][3];
+
+  x_filter[0][0] = -1;  x_filter[0][1] = 0; x_filter[0][2] = 1;
+  x_filter[1][0] = -2;  x_filter[1][1] = 0; x_filter[1][2] = 2; 
+  x_filter[2][0] = -1;  x_filter[2][1] = 0; x_filter[2][2] = 1; 
+
+  float local_result = 0.0;  
+  for(int i = 1; i < height - 1; i++)
+    {
+      for(int j = 1; j < width - 1; j++)
+	{
+	  for(int a = 0; a < 3; a++)
+	    {
+	      for(int b = 0; b < 3; b++)
+		{
+		  local_result += image[i - 1 + a][j - 1 + b] * x_filter[a][b];
+		}
+	    }	  
+	  if(local_result < 0) local_result = 0;
+	  if(local_result > 255) local_result = 255;
+	  gradientX[i][j] = local_result;
+	  local_result = 0.0;	  
+	}
+    }
+  
+  return gradientX;
+}
+
+float** par_sobelFilterY(float** image, int height, int width)
+{
+  float** gradientY = new float*[height];
+
+  for(int i = 0; i < height; i++)
+    {
+      gradientY[i] = new float[width];
+    }
+
+  float y_filter[3][3];
+
+  y_filter[0][0] = -1;  y_filter[0][1] = -2; y_filter[0][2] = -1;
+  y_filter[1][0] = 0;  y_filter[1][1] = 0; y_filter[1][2] = 0; 
+  y_filter[2][0] = 1;  y_filter[2][1] = 2; y_filter[2][2] = 1;
+  
+  float local_result = 0.0;  
+#pragma omp parallel for collapse(2) firstprivate(local_result)
+  for(int i = 1; i < height - 1; i++)
+    {
+      for(int j = 1; j < width - 1; j++)
+	{
+	  for(int a = 0; a < 3; a++)
+	    {
+	      for(int b = 0; b < 3; b++)
+		{
+		  local_result += image[i - 1 + a][j - 1 + b] * y_filter[a][b];
+		}
+	    }	  
+	  if(local_result < 0) local_result = 0;
+	  if(local_result > 255) local_result = 255;
+	  gradientY[i][j] = local_result;
+	  local_result = 0.0;	  
+	}
+    }
+  
+  return gradientY;
+} 
+
+float** sobelFilterY(float** image, int height, int width)
+{
+  float** gradientY = new float*[height];
+
+  for(int i = 0; i < height; i++)
+    {
+      gradientY[i] = new float[width];
+    }
+
+  float y_filter[3][3];
+
+  y_filter[0][0] = -1;  y_filter[0][1] = -2; y_filter[0][2] = -1;
+  y_filter[1][0] = 0;  y_filter[1][1] = 0; y_filter[1][2] = 0; 
+  y_filter[2][0] = 1;  y_filter[2][1] = 2; y_filter[2][2] = 1;
+  
+  float local_result = 0.0;  
+  //printImageMatrix(image, height, width);
+  for(int i = 1; i < height - 1; i++)
+    {
+      for(int j = 1; j < width - 1; j++)
+	{
+	  for(int a = 0; a < 3; a++)
+	    {
+	      for(int b = 0; b < 3; b++)
+		{
+		  local_result += image[i - 1 + a][j - 1 + b] * y_filter[a][b];
+		}
+	    }	  
+	  if(local_result < 0) local_result = 0;
+	  if(local_result > 255) local_result = 255;
+	  gradientY[i][j] = local_result;
+	  local_result = 0.0;	  
+	}
+    }
+  
+  return gradientY;
+}
+
+float** par_sobelEdgeDetection(float** gradX, float** gradY, int height, int width, float T)
+{
+  float** sobelEdgeDetectedImage = new float*[height];
+  
+  for(int i = 0; i < height; i++)
+    {
+      sobelEdgeDetectedImage[i] = new float[width];
+    }
+
+  float local_sum = 0;
+#pragma omp parallel for collapse(2) firstprivate(local_sum)
+  for(int i = 0; i < height; i++)
+    {
+      for(int j = 0; j < width; j++)
+	{
+	  local_sum = (gradX[i][j] * gradX[i][j]) + (gradY[i][j] * gradY[i][j]);
+	  local_sum = sqrt(local_sum);
+	  
+	  if(local_sum > T)
+	    sobelEdgeDetectedImage[i][j] = 255;
+	  else
+	    sobelEdgeDetectedImage[i][j] = 0;
+	}      
+    }
+
+  return sobelEdgeDetectedImage;
+}
+
+float** sobelEdgeDetection(float** gradX, float** gradY, int height, int width, float T)
+{
+  float** sobelEdgeDetectedImage = new float*[height];
+  
+  for(int i = 0; i < height; i++)
+    {
+      sobelEdgeDetectedImage[i] = new float[width];
+    }
+
+  float local_sum = 0;
+  for(int i = 0; i < height; i++)
+    {
+      for(int j = 0; j < width; j++)
+	{
+	  local_sum = (gradX[i][j] * gradX[i][j]) + (gradY[i][j] * gradY[i][j]);
+	  local_sum = sqrt(local_sum);
+	  
+	  if(local_sum > T)
+	    sobelEdgeDetectedImage[i][j] = 255;
+	  else
+	    sobelEdgeDetectedImage[i][j] = 0;
+	}      
+    }
+
+  return sobelEdgeDetectedImage;
+}
+
+float** imageWarp(float** image, int height, int width)
+{
+  float** warpedImage = new float*[height];
+  
+  for(int i = 0; i < height; i++)
+    {
+      warpedImage[i] = new float[width];
+    }
+
+  int x, y, x_cursor, y_cursor, center_x = width/2, center_y = height/2; 
+  float radius, theta;
+  float DRAD = 180.0f / PI;
+
+  for(y_cursor = 0; y_cursor < height; y_cursor++)
+    {
+      for(x_cursor = 0; x_cursor < width; x_cursor++)
+	{
+	  radius = sqrtf((x_cursor - center_x) * (x_cursor - center_x) + (y_cursor - center_y) * (y_cursor - center_y));
+	  theta = (radius / 2) * DRAD;
+	  x = cos(theta) * (x_cursor - center_x) - sin(theta) * (y_cursor - center_y) + center_x;
+	  y = sin(theta) * (x_cursor - center_x) + cos(theta) * (y_cursor - center_y) + center_y;
+
+	  std::cout << x << " " << y << std::endl;
+	  warpedImage[y_cursor][x_cursor] = image[y_cursor][x_cursor];
+	}
+    }
+
+  return warpedImage;
+} 
+
+float** par_medianFilter(float** image, int height, int width, const int k)
+{
+  float** medianFilteredImage(image);
+  
+  const int window_size = k*k;
+  float window[window_size];
+
+  float median;
+  int w_index = 0;
+#pragma omp parallel for collapse(2) private(median, window, w_index)
+    for(int row = k/2; row <= height - k/2 - 1; row++)
+      {
+	for(int col = k/2; col <= width - k/2 - 1; col++)
+	  {
+	    for(int i = -k/2; i <= k/2; i++)
+	      {
+		for(int j = -k/2; j <= k/2; j++)
+		  {
+		    window[w_index] = image[row - i][col -j];
+		    w_index++;
+		  }
+	      }
+	    median = getMedian(window, k*k);
+	    medianFilteredImage[row][col] = median;
+	    w_index = 0;
+	  }
+      }
+  
+    return medianFilteredImage; 
+}
+
+float** medianFilter(float** image, int height, int width, int k)
+{
+  float** medianFilteredImage(image);
 
   int window_size = k*k;
   float* window = new float[window_size];
+
   for(int row = k/2; row <= height - k/2 - 1; row++)
     {
       for(int col = k/2; col <= width - k/2 - 1; col++)
@@ -168,8 +442,6 @@ float** medianFilter(float** image, int height, int width, int k)
 		}
 	    }
 	  float median = getMedian(window, k*k);
-	  if(row == 5 && col == 0)
-	    std::cout << median << " " << "kek" << std::endl;
 	  medianFilteredImage[row][col] = median;
 	}
     }
@@ -196,21 +468,131 @@ void matrixToFile(std::string fileName, float** image, int height, int width)
   outFile.close();
 }
 
+bool checkEquality(float** image1, float** image2, int height, int width)
+{
+  bool equal = true;
+  for(int i = 0; i < height; i++)
+    {
+      for(int j = 0; j < width; j++)
+	{
+	  if(image1[i][j] != image2[i][j])
+	    equal = false;
+	}
+    }
+
+  return equal;
+}
+
 
 int main(int argc, char** argv)
 {
   std::string inFileName = argv[1];
   std::string outFileName = argv[2];
+  int writeOut = atoi(argv[3]);
   int height, width, max = -1, min = 256;
 
-  float** image = fileToMatrix(inFileName, height, width);
-
-  //findMinAndMax(image, height, width, max, min);
-  //float** linScaledImage = linearScale(image, height, width, max, min);
-
-  float** medianFilteredImage = medianFilter(image, height, width, 3);
+  float** image;
+  fileToMatrix(image, inFileName, height, width);
+  findMinAndMax(image, height, width, max, min);
   
-  matrixToFile(outFileName, medianFilteredImage, height, width);
+  std::cout << std::endl;
+  std::cout << "*********************************MEDIAN FILTERING COMPARISON*********************************" << std::endl;
+  std::cout << std::endl;
+
+  /*********************************MEDIAN FILTERING COMPARISON*********************************/
+  double start = omp_get_wtime();
+  float** medianFilteredImage = medianFilter(image, height, width, 3);  
+  double dur = omp_get_wtime() - start;
+  std::cout << "Median Sequential: " << dur << std::endl;
+  start = omp_get_wtime();
+  float** parMedianFilteredImage = par_medianFilter(image, height, width, 3);  
+  dur = omp_get_wtime() - start;
+  std::cout << "Median Parallel: " << dur << std::endl;
+  std::cout << "Median True: " << checkEquality(medianFilteredImage, parMedianFilteredImage, height, width) << std::endl;
+  if(writeOut == 1)
+    {
+      matrixToFile(outFileName + "_seqMedian.txt", medianFilteredImage, height, width);
+      matrixToFile(outFileName + "_parMedian.txt", parMedianFilteredImage, height, width);
+    }
+  /*********************************MEDIAN FILTERING COMPARISON*********************************/
+
+  std::cout << std::endl;
+  std::cout << "*********************************LINEAR SCALING COMPARISON*********************************" << std::endl;
+  std::cout << std::endl;
+
+  /*********************************LINEAR SCALING COMPARISON*********************************/
+  start = omp_get_wtime();
+  float** linScaledImage = linearScale(image, height, width, max, min);
+  dur = omp_get_wtime() - start;
+  std::cout << "LinScale Sequential: " << dur << std::endl;
+  start = omp_get_wtime();
+  float** parLinScaledImage = par_linearScale(image, height, width, max, min);
+  dur = omp_get_wtime() - start;
+  std::cout << "LinScale Parallel: " << dur << std::endl;
+  std::cout << "LinScale True: " << checkEquality(linScaledImage, parLinScaledImage, height, width) << std::endl;
+  if(writeOut == 1)
+    {
+      matrixToFile(outFileName + "_seqLinear.txt", linScaledImage, height, width);
+      matrixToFile(outFileName + "_parLinear.txt", parLinScaledImage, height, width);
+    }
+  /*********************************LINEAR SCALING COMPARISON*********************************/
+
+  std::cout << std::endl;
+  std::cout << "*********************************SOBEL FILTER COMPARISON*********************************" << std::endl;
+  std::cout << std::endl;
+  
+  /*********************************SOBEL FILTER COMPARISON*********************************/
+  start = omp_get_wtime();
+  float** gradientX = sobelFilterX(medianFilteredImage, height, width);
+  dur = omp_get_wtime() - start;
+  std::cout << "SobelFilter(X) Sequential: " << dur << std::endl;
+  start = omp_get_wtime();
+  float** parGradientX = par_sobelFilterX(medianFilteredImage, height, width);
+  dur = omp_get_wtime() - start;
+  std::cout << "SobelFilter(X) Parallel: " << dur << std::endl;
+  std::cout << "SobelFilter(X) True: " << checkEquality(gradientX, parGradientX, height, width) << std::endl;
+  start = omp_get_wtime();
+  float** gradientY = sobelFilterY(medianFilteredImage, height, width);
+  dur = omp_get_wtime() - start;
+  std::cout << "SobelFilter(Y) Sequential: " << dur << std::endl;
+  start = omp_get_wtime();
+  float** parGradientY = par_sobelFilterY(medianFilteredImage, height, width);
+  dur = omp_get_wtime() - start;
+  std::cout << "SobelFilter(Y) Parallel: " << dur << std::endl;
+  std::cout << "SobelFilter(Y) True: " << checkEquality(gradientY, parGradientY, height, width) << std::endl;
+  if(writeOut == 1)
+    {
+      matrixToFile(outFileName + "_seqGradX.txt", gradientX, height, width);
+      matrixToFile(outFileName + "_seqGradY.txt", gradientY, height, width);
+      matrixToFile(outFileName + "_parGradX.txt", parGradientX, height, width);
+      matrixToFile(outFileName + "_parGradY.txt", parGradientY, height, width);
+    }
+  /*********************************SOBEL FILTER COMPARISON*********************************/
+
+  std::cout << std::endl;
+  std::cout << "*********************************SOBEL EDGE DETECTION COMPARISON*********************************" << std::endl;
+  std::cout << std::endl;
+
+  /*********************************SOBEL EDGE DETECTION COMPARISON*********************************/
+  start = omp_get_wtime();
+  float** sobelEdgeDetectedImage = sobelEdgeDetection(gradientX, gradientY, height, width, 80);
+  dur = omp_get_wtime() - start;
+  std::cout << "SobelEdge Sequential: " << dur << std::endl;
+  start = omp_get_wtime();
+  float** parSobelEdgeDetectedImage = par_sobelEdgeDetection(parGradientX, parGradientY, height, width, 80);
+  dur = omp_get_wtime() - start;
+  std::cout << "SobelEdge Parallel: " << dur << std::endl;
+  std::cout << "SobelEdge True: " << checkEquality(sobelEdgeDetectedImage, parSobelEdgeDetectedImage, height, width) << std::endl;
+  if(writeOut == 1)
+    {
+      matrixToFile(outFileName + "_seqSobelEdgeX.txt", sobelEdgeDetectedImage, height, width);
+      matrixToFile(outFileName + "_parSobelEdge.txt", parSobelEdgeDetectedImage, height, width);
+    }
+  /*********************************SOBEL EDGE DETECTION COMPARISON*********************************/
+  std::cout << std::endl;
+
+
+
 
   return 0;
 }
