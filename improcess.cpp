@@ -223,6 +223,65 @@ float** par_reflection(float** image, int height, int width)
 	return reflectedImage;
 }
 
+float** rotate90(float **image, int height, int width)  {  
+    float **rotated;
+    rotated = new float*[width];
+    for (int i = 0; i < width; ++i) 
+        rotated[i] = new float[height];
+  
+    for (int i = 0; i < width; i++) {  
+      for (int j = 0; j < height; j++) {  
+            rotated[i][j] = image[height-j-1][i];
+        }  
+    }
+  return rotated;  
+}  
+
+float** rotate90_par(float **image, int height, int width)  {  
+    float **rotated;
+    rotated = new float*[width];
+    #pragma omp parallel for
+    for (int i = 0; i < width; ++i) 
+        rotated[i] = new float[height];
+  
+    #pragma omp parallel for collapse(2)
+    for (int i = 0; i < width; i++) {  
+      for (int j = 0; j < height; j++) {  
+            rotated[i][j] = image[height-j-1][i];
+        }  
+    }
+  return rotated;  
+}
+
+
+float** rotate180(float **image, int height, int width)  {  
+    float **rotated1 = rotate90(image, height, width);
+    float **result = rotate90(rotated1, width, height);
+  return result;  
+}  
+
+float** rotate180_par(float **image, int height, int width)  {  
+    float **rotated1 = rotate90_par(image, height, width);
+    float **result = rotate90_par(rotated1, width, height);
+  return result;  
+}  
+
+float** rotate270(float **image, int height, int width)  {  
+    float **rotated1 = rotate90(image, height, width);
+    float **rotated2 = rotate90(rotated1, width, height);
+    float **result = rotate90(rotated2, height, width);
+  return result;  
+} 
+
+float** rotate270_par(float **image, int height, int width)  {  
+    float **rotated1 = rotate90_par(image, height, width);
+    float **rotated2 = rotate90_par(rotated1, width, height);
+    float **result = rotate90_par(rotated2, height, width);
+  return result;  
+} 
+
+
+
 double getAverage(float** image, int height, int width)
 {
 	float sum = 0;
