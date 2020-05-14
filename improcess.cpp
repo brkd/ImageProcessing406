@@ -84,23 +84,26 @@ float** orderedDithering(float** image, int height, int width)
 		for (int j = 0; j < width - 2; j += 2)
 		{
 			if (image[i][j] > 192)
-				image[i][j] = 256;
+				ditheredImage[i][j] = 256;
 			else
-				image[i][j] = 0;
+				ditheredImage[i][j] = 0;
 
 			if (image[i][j+1] > 64)
-				image[i][j+1] = 256;
+				ditheredImage[i][j+1] = 256;
 			else
-				image[i][j+1] = 0;
+				ditheredImage[i][j+1] = 0;
 
 			if (image[i+1][j+1] > 128)
-				image[i+1][j+1] = 256;
+				ditheredImage[i+1][j+1] = 256;
 			else
-				image[i+1][j+1] = 0;
+				ditheredImage[i+1][j+1] = 0;
 
-			image[i+1][j] = 256;
+			ditheredImage[i+1][j] = 256;
 		}
 	}
+	
+
+	
 
 	return ditheredImage;
 }
@@ -116,21 +119,21 @@ float** par_orderedDithering(float** image, int height, int width)
 		for (int j = 0; j < width - 2; j += 2)
 		{
 			if (image[i][j] > 192)
-				image[i][j] = 256;
+				ditheredImage[i][j] = 256;
 			else
-				image[i][j] = 0;
+				ditheredImage[i][j] = 0;
 
 			if (image[i][j + 1] > 64)
-				image[i][j + 1] = 256;
+				ditheredImage[i][j + 1] = 256;
 			else
-				image[i][j + 1] = 0;
+				ditheredImage[i][j + 1] = 0;
 
 			if (image[i + 1][j + 1] > 128)
-				image[i + 1][j + 1] = 256;
+				ditheredImage[i + 1][j + 1] = 256;
 			else
-				image[i + 1][j + 1] = 0;
+				ditheredImage[i + 1][j + 1] = 0;
 
-			image[i + 1][j] = 256;
+			ditheredImage[i + 1][j] = 256;
 		}
 	}
 
