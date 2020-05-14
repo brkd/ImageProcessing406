@@ -754,7 +754,7 @@ std::cout << std::endl;
   float** parDitheredImage = par_orderedDithering(image, height, width);
   dur = omp_get_wtime() - start;
   std::cout << "Dithered Parallel: " << dur << std::endl;
-  std::cout << "Dithered True: " << checkEquality(ditheredImage, parDitheredImage, height, width) << std::endl;
+  std::cout << "Dithered True: " << checkEquality(ditheredImage, parDitheredImage, height-2, width-2) << std::endl;
   if (writeOut == 1)
   {
 	  matrixToFile(outFileName + "_seqDithering.txt", ditheredImage, height, width);
