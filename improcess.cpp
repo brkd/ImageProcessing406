@@ -621,7 +621,7 @@ void matrixToFile(std::string fileName, float** image, int height, int width)
     {
       for(int j = 0; j < width; j++)
 	{
-	  outFile << std::fixed << std::setprecision(2) << image[i][j] << " ";
+	  outFile << ("%.2f", image[i][j]) << " ";
 	}
       outFile << '\n';
     }
@@ -698,9 +698,10 @@ int main(int argc, char** argv)
     }
   /*********************************LINEAR SCALING COMPARISON*********************************/
 	
-std::cout << std::endl;
+  std::cout << std::endl;
   std::cout << "*********************************GRAYWORLD COMPARISON*********************************" << std::endl;
   std::cout << std::endl;
+
   double average = getAverage(image, height, width);
   /*********************************GRAYWORLD COMPARISON*********************************/
   start = omp_get_wtime();
@@ -713,12 +714,12 @@ std::cout << std::endl;
   std::cout << "GrayWorld Parallel: " << dur << std::endl;
   std::cout << "GrayWorld True: " << checkEquality(grayWorldImage, parGrayWorldImage, height, width) << std::endl;
   if (writeOut == 1)
-  {
-	  matrixToFile(outFileName + "_seqGrayWorld.txt", grayWorldImage, height, width);
-	  matrixToFile(outFileName + "_parGrayWorld.txt", parGrayWorldImage, height, width);
-  }
+    {
+      matrixToFile(outFileName + "_seqGrayWorld.txt", grayWorldImage, height, width);
+      matrixToFile(outFileName + "_parGrayWorld.txt", parGrayWorldImage, height, width);
+    }
   /*********************************GRAYWORLD COMPARISON*********************************/
-
+  
   std::cout << std::endl;
   std::cout << "*********************************REFLECTION COMPARISON*********************************" << std::endl;
   std::cout << std::endl;
@@ -733,12 +734,12 @@ std::cout << std::endl;
   std::cout << "Reflection Parallel: " << dur << std::endl;
   std::cout << "Reflection True: " << checkEquality(grayWorldImage, parGrayWorldImage, height, width) << std::endl;
   if (writeOut == 1)
-  {
-	  matrixToFile(outFileName + "_seqReflection.txt", reflectedImage, height, width);
-	  matrixToFile(outFileName + "_parReflection.txt", parReflectedImage, height, width);
-  }
+    {
+      matrixToFile(outFileName + "_seqReflection.txt", reflectedImage, height, width);
+      matrixToFile(outFileName + "_parReflection.txt", parReflectedImage, height, width);
+    }
   /*********************************REFLECTION COMPARISON*********************************/
-
+  
   std::cout << std::endl;
   std::cout << "*********************************DITHERING COMPARISON*********************************" << std::endl;
   std::cout << std::endl;
@@ -753,12 +754,12 @@ std::cout << std::endl;
   std::cout << "Dithered Parallel: " << dur << std::endl;
   std::cout << "Dithered True: " << checkEquality(ditheredImage, parDitheredImage, height, width) << std::endl;
   if (writeOut == 1)
-  {
-	  matrixToFile(outFileName + "_seqDithering.txt", ditheredImage, height, width);
-	  matrixToFile(outFileName + "_parDithering.txt", parDitheredImage, height, width);
-  }
+    {
+      matrixToFile(outFileName + "_seqDithering.txt", ditheredImage, height, width);
+      matrixToFile(outFileName + "_parDithering.txt", parDitheredImage, height, width);
+    }
   /*********************************DITHERING COMPARISON*********************************/
-
+  
   std::cout << std::endl;
   std::cout << "*********************************SOBEL FILTER COMPARISON*********************************" << std::endl;
   std::cout << std::endl;
