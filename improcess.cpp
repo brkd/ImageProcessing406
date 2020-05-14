@@ -75,6 +75,167 @@ void findMinAndMax(float** image, int height, int width, int& max, int& min)
     }
 }
 
+float** orderedDithering(float** image, int height, int width)
+{
+	float** ditheredImage = new float*[height];
+
+	for (int i = 0; i < height - 2; i += 2)
+	{
+		for (int j = 0; j < width - 2; j += 2)
+		{
+			if (image[i][j] > 192)
+				image[i][j] = 256;
+			else
+				image[i][j] = 0;
+
+			if (image[i][j+1] > 64)
+				image[i][j+1] = 256;
+			else
+				image[i][j+1] = 0;
+
+			if (image[i+1][j+1] > 128)
+				image[i+1][j+1] = 256;
+			else
+				image[i+1][j+1] = 0;
+
+			image[i+1][j] = 256;
+		}
+	}
+
+	return ditheredImage;
+}
+
+float** par_orderedDithering(float** image, int height, int width)
+{
+	float** ditheredImage = new float*[height];
+
+#pragma omp parallel for 
+	for (int i = 0; i < height - 2; i += 2)
+	{
+#pragma omp parallel for 
+		for (int j = 0; j < width - 2; j += 2)
+		{
+			if (image[i][j] > 192)
+				image[i][j] = 256;
+			else
+				image[i][j] = 0;
+
+			if (image[i][j + 1] > 64)
+				image[i][j + 1] = 256;
+			else
+				image[i][j + 1] = 0;
+
+			if (image[i + 1][j + 1] > 128)
+				image[i + 1][j + 1] = 256;
+			else
+				image[i + 1][j + 1] = 0;
+
+			image[i + 1][j] = 256;
+		}
+	}
+
+	return ditheredImage;
+}
+
+
+float** grayWorld(float** image, int height, int width, double average)
+{
+	float** scaledImage = new float*[height];
+
+	double scalingValue = 127.5 / average;
+
+	for (int i = 0; i < height; i++)
+	{
+		scaledImage[i] = new float[width];
+	}
+
+
+	for (int i = 0; i < height; i++)
+	{
+		for (int j = 0; j < width; j++)
+		{
+			scaledImage[i][j] = image[i][j] * scalingValue;
+		}
+	}
+
+	return scaledImage;
+}
+
+
+float** par_grayWorld(float** image, int height, int width, double average)
+{
+	float** scaledImage = new float*[height];
+
+	double scalingValue = 127.5 / average;
+
+	for (int i = 0; i < height; i++)
+	{
+		scaledImage[i] = new float[width];
+	}
+
+#pragma omp parallel for 
+	for (int i = 0; i < height; i++)
+	{
+#pragma omp parallel for 
+		for (int j = 0; j < width; j++)
+		{
+			scaledImage[i][j] = image[i][j] * scalingValue;
+		}
+	}
+
+	return scaledImage;
+}
+
+
+
+float** reflection(float** image, int height, int width)
+{
+	float** reflectedImage(image);
+
+	for (int i = 0; i < height; i++)
+	{
+		for (int j = 0; j < width; j++)
+		{
+			reflectedImage[i][j] = image[i][width - j - 1];
+		}
+	}
+
+	return reflectedImage;
+}
+
+float** par_reflection(float** image, int height, int width)
+{
+	float** reflectedImage(image);
+
+#pragma omp parallel for 
+	for (int i = 0; i < height; i++)
+	{
+#pragma omp parallel for 
+		for (int j = 0; j < width; j++)
+		{
+			reflectedImage[i][j] = image[i][width - j - 1];
+		}
+	}
+
+	return reflectedImage;
+}
+
+double getAverage(float** image, int height, int width)
+{
+	float sum = 0;
+
+	for (int i = 0; i < height; i++)
+	{
+		for (int j = 0; j < width; j++)
+		{
+			sum += image[i][j];
+		}
+	}
+
+	return sum / (width * height);
+}
+
+
 // g(u) = b*(u + a)
 float** linearScale(float** image, int height, int width, int max, int min)
 {
@@ -536,6 +697,67 @@ int main(int argc, char** argv)
       matrixToFile(outFileName + "_parLinear.txt", parLinScaledImage, height, width);
     }
   /*********************************LINEAR SCALING COMPARISON*********************************/
+	
+std::cout << std::endl;
+  std::cout << "*********************************GRAYWORLD COMPARISON*********************************" << std::endl;
+  std::cout << std::endl;
+  double average = getAverage(image, height, width);
+  /*********************************GRAYWORLD COMPARISON*********************************/
+  start = omp_get_wtime();
+  float** grayWorldImage = grayWorld(image, height, width, average);
+  dur = omp_get_wtime() - start;
+  std::cout << "GrayWorld Sequential: " << dur << std::endl;
+  start = omp_get_wtime();
+  float** parGrayWorldImage = par_grayWorld(image, height, width, average);
+  dur = omp_get_wtime() - start;
+  std::cout << "GrayWorld Parallel: " << dur << std::endl;
+  std::cout << "GrayWorld True: " << checkEquality(grayWorldImage, parGrayWorldImage, height, width) << std::endl;
+  if (writeOut == 1)
+  {
+	  matrixToFile(outFileName + "_seqGrayWorld.txt", grayWorldImage, height, width);
+	  matrixToFile(outFileName + "_parGrayWorld.txt", parGrayWorldImage, height, width);
+  }
+  /*********************************GRAYWORLD COMPARISON*********************************/
+
+  std::cout << std::endl;
+  std::cout << "*********************************REFLECTION COMPARISON*********************************" << std::endl;
+  std::cout << std::endl;
+  /*********************************REFLECTION COMPARISON*********************************/
+  start = omp_get_wtime();
+  float** reflectedImage = reflection(image, height, width);
+  dur = omp_get_wtime() - start;
+  std::cout << "Reflection Sequential: " << dur << std::endl;
+  start = omp_get_wtime();
+  float** parReflectedImage = par_reflection(image, height, width);
+  dur = omp_get_wtime() - start;
+  std::cout << "Reflection Parallel: " << dur << std::endl;
+  std::cout << "Reflection True: " << checkEquality(grayWorldImage, parGrayWorldImage, height, width) << std::endl;
+  if (writeOut == 1)
+  {
+	  matrixToFile(outFileName + "_seqReflection.txt", reflectedImage, height, width);
+	  matrixToFile(outFileName + "_parReflection.txt", parReflectedImage, height, width);
+  }
+  /*********************************REFLECTION COMPARISON*********************************/
+
+  std::cout << std::endl;
+  std::cout << "*********************************DITHERING COMPARISON*********************************" << std::endl;
+  std::cout << std::endl;
+  /*********************************DITHERING COMPARISON*********************************/
+  start = omp_get_wtime();
+  float** ditheredImage = orderedDithering(image, height, width);
+  dur = omp_get_wtime() - start;
+  std::cout << "Dithered Sequential: " << dur << std::endl;
+  start = omp_get_wtime();
+  float** parDitheredImage = par_orderedDithering(image, height, width);
+  dur = omp_get_wtime() - start;
+  std::cout << "Dithered Parallel: " << dur << std::endl;
+  std::cout << "Dithered True: " << checkEquality(ditheredImage, parDitheredImage, height, width) << std::endl;
+  if (writeOut == 1)
+  {
+	  matrixToFile(outFileName + "_seqDithering.txt", ditheredImage, height, width);
+	  matrixToFile(outFileName + "_parDithering.txt", parDitheredImage, height, width);
+  }
+  /*********************************DITHERING COMPARISON*********************************/
 
   std::cout << std::endl;
   std::cout << "*********************************SOBEL FILTER COMPARISON*********************************" << std::endl;
