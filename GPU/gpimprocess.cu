@@ -116,12 +116,107 @@ void getMinAndMax(float** image, int height, int width, int* min, int* max)
    std::cout << "Min: " << *min << " ||-|| Max: " << *max << std::endl;
 }
 
+double getAverage(float** image, int height, int width)
+{
+	float sum = 0;
+
+	for (int i = 0; i < height; i++)
+	{
+		for (int j = 0; j < width; j++)
+		{
+			sum += image[i][j];
+		}
+	}
+
+	return sum / (width * height);
+}
 
 
 __global__ void linearScale(float* image, int* a, int* width, float* b)
 {
    float u = image[blockIdx.x];
    image[blockIdx.x] = (*b) * (u + (*a));
+}
+
+
+__global__ void grayWorld(float* image, double* scalingValue)
+{
+	float u = image[blockIdx.x];
+	image[blockIdx.x] = u * *scalingValue;
+}
+
+__global__ void reflection(float* image, int* width)
+{
+	//blockIdx.x = i * *width + j
+	int i = blockIdx.x / *width;
+	int j = blockIdx.x - i * *width;  
+
+	int reflectedIndex = i * *width + (*width - j - 1);
+	float u = image[reflectedIndex];
+	image[blockIdx.x] = u;
+}
+
+__global__ void orderedDithering(float* image, int* width)
+{
+	//blockIdx.x = i * *width + j
+	int i = blockIdx.x / *width;
+	int j = blockIdx.x - i * *width; 
+
+	float u = image[blockIdx.x];
+
+	if(i%2 == 0)
+	{
+		if(j%2 == 0)
+		{
+			if(u > 192)
+				image[blockIdx.x] = 256;
+			else
+				image[blockIdx.x] = 0;
+		}
+		else
+		{
+			if(u > 64)
+				image[blockIdx.x] = 256;
+			else
+				image[blockIdx.x] = 0;
+		}
+	}
+	else
+	{
+		if(j%2 == 0)
+			image[blockIdx.x] = 256;
+
+		else
+		{
+			if(u > 128)
+				image[blockIdx.x] = 256;
+			else
+				image[blockIdx.x] = 0;
+		}
+	}
+
+}
+
+__global__ void rotate90(float* image, int* height, int* width)
+{
+	//blockIdx.x = i * *width + j
+	int i = blockIdx.x / *width;
+	int j = blockIdx.x - i * *width; 
+
+	int rotatedIndex = (*height - j - 1) * *width + i;
+	float u = image[rotatedIndex];
+	image[blockIdx] = u;
+}
+
+__global__ void rotate180(float* image, int* height, int* width)
+{
+	//blockIdx.x = i * *width + j
+	int i = blockIdx.x / *width;
+	int j = blockIdx.x - i * *width; 
+
+	int rotatedIndex = (*height - i - 1) * *width + (*width - j - 1);
+	float u = image[rotatedIndex];
+	image[blockIdx] = u;
 }
 
 
@@ -205,7 +300,71 @@ int main(int argc, char** argv)
 
    if(writeOut)
       matrixToFile(outFileName, hostResult, height, width);
+
+   //GRAYWORLD
+   double average = getAverage(hostImage, height, width), *d_average;
+
+
+   cudaMalloc((void**)&d_average, sizeof(double));
+   cudaMemcpy(d_average, &average, sizeof(double), cudaMemcpyHostToDevice);
+
+   cudaMalloc((void**)&deviceImage, image_size);
+   cudaMemcpy(deviceImage, hostFlattened, image_size, cudaMemcpyHostToDevice);	
+
+   grayWorld<<<BLOCK_C, 1>>>(deviceImage, d_average);
+   cudaMemcpy(hostResult, deviceImage, image_size, cudaMemcpyDeviceToHost);
+
+   if(writeOut)
+      matrixToFile(outFileName, hostResult, height, width);
    
+
+  //REFLECTION
+  
+   cudaMalloc((void**)&width_d, sizeof(int));          
+   cudaMemcpy(width_d, &width, sizeof(int), cudaMemcpyHostToDevice);  
+
+   cudaMalloc((void**)&deviceImage, image_size);
+   cudaMemcpy(deviceImage, hostFlattened, image_size, cudaMemcpyHostToDevice);	
+
+   reflection<<<BLOCK_C, 1>>>(deviceImage, width_d);
+   cudaMemcpy(hostResult, deviceImage, image_size, cudaMemcpyDeviceToHost);
+
+   if(writeOut)
+      matrixToFile(outFileName, hostResult, height, width);
+
+
+   //ORDERED DITHERING
+  
+   cudaMalloc((void**)&width_d, sizeof(int));          
+   cudaMemcpy(width_d, &width, sizeof(int), cudaMemcpyHostToDevice);  
+
+   cudaMalloc((void**)&deviceImage, image_size);
+   cudaMemcpy(deviceImage, hostFlattened, image_size, cudaMemcpyHostToDevice);	
+
+   orderedDithering<<<BLOCK_C, 1>>>(deviceImage, width_d);
+   cudaMemcpy(hostResult, deviceImage, image_size, cudaMemcpyDeviceToHost);
+
+   if(writeOut)
+      matrixToFile(outFileName, hostResult, height, width);
+
+
+   //ROTATE180
+  
+   cudaMalloc((void**)&height_d, sizeof(int));
+   cudaMalloc((void**)&width_d, sizeof(int));   
+
+   cudaMemcpy(height_d, &height, sizeof(int), cudaMemcpyHostToDevice);         
+   cudaMemcpy(width_d, &width, sizeof(int), cudaMemcpyHostToDevice);          
+
+   cudaMalloc((void**)&deviceImage, image_size);
+   cudaMemcpy(deviceImage, hostFlattened, image_size, cudaMemcpyHostToDevice);	
+
+   rotate180<<<BLOCK_C, 1>>>(deviceImage, height_d, width_d);
+   cudaMemcpy(hostResult, deviceImage, image_size, cudaMemcpyDeviceToHost);
+
+   if(writeOut)
+      matrixToFile(outFileName, hostResult, height, width);
+
 
    /*MEDFILTER
    dim3 grid(TILE_W, TILE_H);
