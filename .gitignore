@@ -4,3 +4,5 @@ cppinp/
 cppout/
 TestResults/
 pyout/
+GPU/in/
+GPU/out/
