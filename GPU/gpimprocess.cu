@@ -197,18 +197,18 @@ __global__ void orderedDithering(float* image, int* width)
 
 }
 
-__global__ void rotate90(float* image, int* height, int* width)
+__global__ void rotate90(float* result, float* image, int* height, int* width)
 {
 	//blockIdx.x = i * *width + j
 	int i = blockIdx.x / *width;
 	int j = blockIdx.x - i * *width; 
 
-	int rotatedIndex = (*height - j - 1) * *width + i;
-	float u = image[rotatedIndex];
-	image[blockIdx.x] = u;
+	int rotatedIndex = (*width - j - 1) * *height + i;
+	float u = image[blockIdx.x];
+	result[rotatedIndex] = u;
 }
 
-__global__ void rotate180(float* image, int* height, int* width)
+__global__ void rotate180(float* result, float* image, int* height, int* width)
 {
 	//blockIdx.x = i * *width + j
 	int i = blockIdx.x / *width;
@@ -216,7 +216,7 @@ __global__ void rotate180(float* image, int* height, int* width)
 
 	int rotatedIndex = (*height - i - 1) * *width + (*width - j - 1);
 	float u = image[rotatedIndex];
-	image[blockIdx.x] = u;
+	result[blockIdx.x] = u;
 }
 
 
@@ -253,8 +253,13 @@ __global__ void medianFilter(float* image, float* outImage, int* height, int* wi
 int main(int argc, char** argv)
 {
    char* inFileName = argv[1];
-   char* outFileName = argv[2];
-   int writeOut = atoi(argv[3]);
+   char* outFileName1 = argv[2];
+   char* outFileName2 = argv[3];
+   char* outFileName3 = argv[4];
+   char* outFileName4 = argv[5];
+   char* outFileName5 = argv[6];
+   char* outFileName6 = argv[7];
+   int writeOut = atoi(argv[8]);
 
 
    //IMAGE INIT
@@ -280,6 +285,13 @@ int main(int argc, char** argv)
 
 
    //LINSCALE
+   
+   cudaEvent_t start, stop;
+   float time;
+   
+   cudaEventCreate(&start);
+   cudaEventCreate(&stop);
+   
    int BLOCK_C = height*width;
    int a = -1 * min, *d_a;
 
@@ -295,12 +307,21 @@ int main(int argc, char** argv)
    cudaMalloc((void**)&deviceImage, image_size);
    cudaMemcpy(deviceImage, hostFlattened, image_size, cudaMemcpyHostToDevice);	
 
+   cudaEventRecord(start, 0);
+
    linearScale<<<BLOCK_C, 1>>>(deviceImage, d_a, width_d, d_b);
+   
+   cudaEventRecord(stop, 0);
+   cudaEventSynchronize(stop);
+   cudaEventElapsedTime(&time, start, stop);
+   
    cudaMemcpy(hostResult, deviceImage, image_size, cudaMemcpyDeviceToHost);
-
-   if(writeOut)
-      matrixToFile(outFileName, hostResult, height, width);
-
+   
+   std::cout << "Linear Scaling time: " << time/1000 << "sec" << std::endl;
+   
+     if(writeOut)
+      matrixToFile(outFileName1, hostResult, height, width);
+      
    //GRAYWORLD
    double average = getAverage(hostImage, height, width), *d_average;
 
@@ -311,13 +332,21 @@ int main(int argc, char** argv)
    cudaMalloc((void**)&deviceImage, image_size);
    cudaMemcpy(deviceImage, hostFlattened, image_size, cudaMemcpyHostToDevice);	
 
+   cudaEventRecord(start, 0);
+  
    grayWorld<<<BLOCK_C, 1>>>(deviceImage, d_average);
+   
+   cudaEventRecord(stop, 0);
+   cudaEventSynchronize(stop);
+   cudaEventElapsedTime(&time, start, stop);
+   
    cudaMemcpy(hostResult, deviceImage, image_size, cudaMemcpyDeviceToHost);
 
-   if(writeOut)
-      matrixToFile(outFileName, hostResult, height, width);
-   
+    std::cout << "GrayWorld time: " << time/1000 << "sec" << std::endl;
 
+   if(writeOut)
+      matrixToFile(outFileName2, hostResult, height, width);
+      
   //REFLECTION
   
    cudaMalloc((void**)&width_d, sizeof(int));          
@@ -326,12 +355,20 @@ int main(int argc, char** argv)
    cudaMalloc((void**)&deviceImage, image_size);
    cudaMemcpy(deviceImage, hostFlattened, image_size, cudaMemcpyHostToDevice);	
 
+   cudaEventRecord(start, 0);
+
    reflection<<<BLOCK_C, 1>>>(deviceImage, width_d);
+   
+   cudaEventRecord(stop, 0);
+   cudaEventSynchronize(stop);
+   cudaEventElapsedTime(&time, start, stop);
+   
    cudaMemcpy(hostResult, deviceImage, image_size, cudaMemcpyDeviceToHost);
 
-   if(writeOut)
-      matrixToFile(outFileName, hostResult, height, width);
+   std::cout << "Reflection time: " << time/1000 << "sec" << std::endl;
 
+   if(writeOut)
+      matrixToFile(outFileName3, hostResult, height, width);
 
    //ORDERED DITHERING
   
@@ -341,15 +378,25 @@ int main(int argc, char** argv)
    cudaMalloc((void**)&deviceImage, image_size);
    cudaMemcpy(deviceImage, hostFlattened, image_size, cudaMemcpyHostToDevice);	
 
+   cudaEventRecord(start, 0);
+
    orderedDithering<<<BLOCK_C, 1>>>(deviceImage, width_d);
+   
+   cudaEventRecord(stop, 0);
+   cudaEventSynchronize(stop);
+   cudaEventElapsedTime(&time, start, stop);
+   
    cudaMemcpy(hostResult, deviceImage, image_size, cudaMemcpyDeviceToHost);
-
+     
+   std::cout << "Ordered Dithering time: " << time/1000 << "sec" << std::endl;
+     
    if(writeOut)
-      matrixToFile(outFileName, hostResult, height, width);
+      matrixToFile(outFileName4, hostResult, height, width);
 
-
-   //ROTATE180
-  
+   //ROTATE90
+   float* result90;
+   
+   cudaMalloc((void**)&result90, sizeof(float));
    cudaMalloc((void**)&height_d, sizeof(int));
    cudaMalloc((void**)&width_d, sizeof(int));   
 
@@ -358,14 +405,56 @@ int main(int argc, char** argv)
 
    cudaMalloc((void**)&deviceImage, image_size);
    cudaMemcpy(deviceImage, hostFlattened, image_size, cudaMemcpyHostToDevice);	
+  
+   cudaMalloc((void**)&result90, image_size);
+   cudaMemcpy(result90, hostFlattened, image_size, cudaMemcpyHostToDevice);	
 
-   rotate180<<<BLOCK_C, 1>>>(deviceImage, height_d, width_d);
-   cudaMemcpy(hostResult, deviceImage, image_size, cudaMemcpyDeviceToHost);
+   cudaEventRecord(start, 0);
+
+   rotate90<<<BLOCK_C, 1>>>(result90, deviceImage, height_d, width_d);
+   
+   cudaEventRecord(stop, 0);
+   cudaEventSynchronize(stop);
+   cudaEventElapsedTime(&time, start, stop);
+   
+   cudaMemcpy(hostResult, result90, image_size, cudaMemcpyDeviceToHost);
+
+   std::cout << "Rotation 90 time: " << time/1000 << "sec" << std::endl;
 
    if(writeOut)
-      matrixToFile(outFileName, hostResult, height, width);
+      matrixToFile(outFileName5, hostResult, width, height);
+      
+   //ROTATE180
+   float* result180;
+   
+   cudaMalloc((void**)&result180, sizeof(float));
+   cudaMalloc((void**)&height_d, sizeof(int));
+   cudaMalloc((void**)&width_d, sizeof(int));   
 
+   cudaMemcpy(height_d, &height, sizeof(int), cudaMemcpyHostToDevice);         
+   cudaMemcpy(width_d, &width, sizeof(int), cudaMemcpyHostToDevice);          
 
+   cudaMalloc((void**)&deviceImage, image_size);
+   cudaMemcpy(deviceImage, hostFlattened, image_size, cudaMemcpyHostToDevice);	
+  
+   cudaMalloc((void**)&result180, image_size);
+   cudaMemcpy(result180, hostFlattened, image_size, cudaMemcpyHostToDevice);	
+
+   cudaEventRecord(start, 0);
+
+   rotate180<<<BLOCK_C, 1>>>(result180, deviceImage, height_d, width_d);
+   
+   cudaEventRecord(stop, 0);
+   cudaEventSynchronize(stop);
+   cudaEventElapsedTime(&time, start, stop);
+   
+   cudaMemcpy(hostResult, result180, image_size, cudaMemcpyDeviceToHost);
+   
+   std::cout << "Rotation 180 time: " << time/1000 << "sec" << std::endl;
+
+   if(writeOut)
+      matrixToFile(outFileName6, hostResult, height, width);
+      
    /*MEDFILTER
    dim3 grid(TILE_W, TILE_H);
    dim3 block(BLOCK_W, BLOCK_H);
