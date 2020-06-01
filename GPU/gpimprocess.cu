@@ -205,7 +205,7 @@ __global__ void rotate90(float* image, int* height, int* width)
 
 	int rotatedIndex = (*height - j - 1) * *width + i;
 	float u = image[rotatedIndex];
-	image[blockIdx] = u;
+	image[blockIdx.x] = u;
 }
 
 __global__ void rotate180(float* image, int* height, int* width)
@@ -216,7 +216,7 @@ __global__ void rotate180(float* image, int* height, int* width)
 
 	int rotatedIndex = (*height - i - 1) * *width + (*width - j - 1);
 	float u = image[rotatedIndex];
-	image[blockIdx] = u;
+	image[blockIdx.x] = u;
 }
 
 
