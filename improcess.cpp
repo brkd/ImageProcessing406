@@ -364,25 +364,58 @@ float** rotate180_simd(float **image, int height, int width) {
 }
 
 float** rotate270(float **image, int height, int width) {
-	float **rotated1 = rotate90(image, height, width);
-	float **rotated2 = rotate90(rotated1, width, height);
-	float **result = rotate90(rotated2, height, width);
-	return result;
+	float **rotated;
+	rotated = new float*[width];
+	for (int i = 0; i < width; ++i)
+		rotated[i] = new float[height];
+
+
+	for (int i = 0; i < width; i++) {
+		for (int j = 0; j < height; j++) {
+			rotated[i][j] = image[j][width - i - 1];
+		}
+	}
+	return rotated;
 }
 
 float** rotate270_par(float **image, int height, int width) {
-	float **rotated1 = rotate90_par(image, height, width);
-	float **rotated2 = rotate90_par(rotated1, width, height);
-	float **result = rotate90_par(rotated2, height, width);
-	return result;
+	float **rotated;
+	rotated = new float*[width];
+	#pragma omp parallel for
+	for (int i = 0; i < width; ++i)
+		rotated[i] = new float[height];
+
+	#pragma omp parallel for collapse(2)
+	for (int i = 0; i < width; i++) {
+		for (int j = 0; j < height; j++) {
+			rotated[i][j] = image[j][width - i - 1];
+		}
+	}
+	return rotated;
 }
 
+float** rotate270_simd(float **image, int height, int width) {
+	float **rotated;
+	rotated = new float*[width];
+	#pragma omp parallel for
+	for (int i = 0; i < width; ++i)
+		rotated[i] = new float[height];
 
+	#pragma simd
+	#pragma omp parallel for collapse(2)
+	for (int i = 0; i < width; i++) {
+		for (int j = 0; j < height; j++) {
+			#pragma vector aligned
+			rotated[i][j] = image[j][width - i - 1];
+		}
+	}
+	return rotated;
+}
 
 double getAverage(float** image, int height, int width)
 {
 	float sum = 0;
-
+	
 	for (int i = 0; i < height; i++)
 	{
 		for (int j = 0; j < width; j++)
@@ -1040,6 +1073,7 @@ int main(int argc, char** argv)
 	{
 		matrixToFile(outFileName + "_seqRotate180.txt", rotated180Image, height, width);
 		matrixToFile(outFileName + "_parRotate180.txt", parRotated180Image, height, width);
+		matrixToFile(outFileName + "_simdRotate180.txt", simdRotated180Image, height, width);
 	}
 	/*********************************ROTATE180 COMPARISON*********************************/
 	
@@ -1056,11 +1090,17 @@ int main(int argc, char** argv)
 	float** parRotated270Image = rotate270_par(image, height, width);
 	dur = omp_get_wtime() - start;
 	std::cout << "Rotate270 Parallel: " << dur << std::endl;
-	std::cout << "Rotation270 True: " << checkEquality(rotated270Image, parRotated270Image, width, height) << std::endl;
+	start = omp_get_wtime();
+	float** simdRotated270Image = rotate270_simd(image, height, width);
+	dur = omp_get_wtime() - start;
+	std::cout << "Rotate270 SIMD: " << dur << std::endl;
+	std::cout << "Rotation270 Seq - Par True: " << checkEquality(rotated270Image, parRotated270Image, width, height) << std::endl;
+	std::cout << "Rotation270 Seq - SIMD True: " << checkEquality(rotated270Image, simdRotated270Image, width, height) << std::endl;
 	if (writeOut == 1)
 	{
 		matrixToFile(outFileName + "_seqRotate270.txt", rotated270Image, width, height);
 		matrixToFile(outFileName + "_parRotate270.txt", parRotated270Image, width, height);
+		matrixToFile(outFileName + "_simdRotate270.txt", simdRotated270Image, width, height);
 	}
 	/*********************************ROTATE270 COMPARISON*********************************/
 
