@@ -396,7 +396,6 @@ int main(int argc, char** argv)
    //ROTATE90
    float* result90;
    
-   cudaMalloc((void**)&result90, sizeof(float));
    cudaMalloc((void**)&height_d, sizeof(int));
    cudaMalloc((void**)&width_d, sizeof(int));   
 
@@ -427,7 +426,6 @@ int main(int argc, char** argv)
    //ROTATE180
    float* result180;
    
-   cudaMalloc((void**)&result180, sizeof(float));
    cudaMalloc((void**)&height_d, sizeof(int));
    cudaMalloc((void**)&width_d, sizeof(int));   
 
