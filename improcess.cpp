@@ -76,7 +76,11 @@ void findMinAndMax(float** image, int height, int width, int& max, int& min)
 
 float** orderedDithering(float** image, int height, int width)
 {
-	float** ditheredImage(image);
+  float** ditheredImage = new float*[height];
+	for (int i = 0; i < height; i++)
+	{
+		ditheredImage[i] = new float[width];
+	}
 
 	for (int i = 0; i < height - 2; i += 2)
 	{
@@ -109,7 +113,11 @@ float** orderedDithering(float** image, int height, int width)
 
 float** par_orderedDithering(float** image, int height, int width)
 {
-	float** ditheredImage(image);
+	  float** ditheredImage = new float*[height];
+	for (int i = 0; i < height; i++)
+	{
+		ditheredImage[i] = new float[width];
+	}
 
 #pragma omp parallel for 
 	for (int i = 0; i < height - 2; i += 2)
@@ -142,7 +150,11 @@ float** par_orderedDithering(float** image, int height, int width)
 
 float** simd_orderedDithering(float** image, int height, int width)
 {
-	float** ditheredImage(image);
+	  float** ditheredImage = new float*[height];
+	for (int i = 0; i < height; i++)
+	{
+		ditheredImage[i] = new float[width];
+	}
 
 	for (int i = 0; i < height - 2; i += 2)
 	{
@@ -249,7 +261,11 @@ float** simd_grayWorld(float** image, int height, int width, double average)
 
 float** reflection(float** image, int height, int width)
 {
-	float** reflectedImage(image);
+ 	float** reflectedImage = new float*[height];
+	for (int i = 0; i < height; i++)
+	{
+		reflectedImage[i] = new float[width];
+	}
 
 	for (int i = 0; i < height; i++)
 	{
@@ -264,7 +280,11 @@ float** reflection(float** image, int height, int width)
 
 float** par_reflection(float** image, int height, int width)
 {
-	float** reflectedImage(image);
+	 	float** reflectedImage = new float*[height];
+	for (int i = 0; i < height; i++)
+	{
+		reflectedImage[i] = new float[width];
+	}
 
 #pragma omp parallel for 
 	for (int i = 0; i < height; i++)
@@ -281,7 +301,11 @@ float** par_reflection(float** image, int height, int width)
 
 float** simd_reflection(float** image, int height, int width)
 {
-	float** reflectedImage(image);
+	 	float** reflectedImage = new float*[height];
+	for (int i = 0; i < height; i++)
+	{
+		reflectedImage[i] = new float[width];
+	}
 
 	#pragma simd
 	for (int i = 0; i < height; i++)
@@ -426,7 +450,7 @@ double getAverage(float** image, int height, int width)
 
 	return sum / (width * height);
 }
-
+  
 
 // g(u) = b*(u + a)
 float** linearScale(float** image, int height, int width, int max, int min)
@@ -548,9 +572,6 @@ float** par_sobelFilterX(float** image, int height, int width)
 		gradientX[i] = new float[width];
 	}
 
-	  for(int j = 0; j < width - 1; j++)
-    gradientX[0][j] = 0;
-	
 	float x_filter[3][3];
 
 	x_filter[0][0] = -1;  x_filter[0][1] = 0; x_filter[0][2] = 1;
@@ -630,9 +651,6 @@ float** par_sobelFilterY(float** image, int height, int width)
 		gradientY[i] = new float[width];
 	}
 
-	  for(int j = 0; j < width - 1; j++)
-    gradientY[0][j] = 0;
-	
 	float y_filter[3][3];
 
 	y_filter[0][0] = -1;  y_filter[0][1] = -2; y_filter[0][2] = -1;
