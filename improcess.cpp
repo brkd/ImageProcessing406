@@ -548,6 +548,9 @@ float** par_sobelFilterX(float** image, int height, int width)
 		gradientX[i] = new float[width];
 	}
 
+	  for(int j = 0; j < width - 1; j++)
+    gradientX[0][j] = 0;
+	
 	float x_filter[3][3];
 
 	x_filter[0][0] = -1;  x_filter[0][1] = 0; x_filter[0][2] = 1;
@@ -586,6 +589,9 @@ float** sobelFilterX(float** image, int height, int width)
 		gradientX[i] = new float[width];
 	}
 
+  for(int j = 0; j < width - 1; j++)
+    gradientX[0][j] = 0;
+
 	float x_filter[3][3];
 
 	x_filter[0][0] = -1;  x_filter[0][1] = 0; x_filter[0][2] = 1;
@@ -607,6 +613,7 @@ float** sobelFilterX(float** image, int height, int width)
 			if (local_result < 0) local_result = 0;
 			if (local_result > 255) local_result = 255;
 			gradientX[i][j] = local_result;
+       
 			local_result = 0.0;
 		}
 	}
@@ -623,6 +630,9 @@ float** par_sobelFilterY(float** image, int height, int width)
 		gradientY[i] = new float[width];
 	}
 
+	  for(int j = 0; j < width - 1; j++)
+    gradientY[0][j] = 0;
+	
 	float y_filter[3][3];
 
 	y_filter[0][0] = -1;  y_filter[0][1] = -2; y_filter[0][2] = -1;
@@ -660,6 +670,10 @@ float** sobelFilterY(float** image, int height, int width)
 	{
 		gradientY[i] = new float[width];
 	}
+
+    for(int j = 0; j < width - 1; j++)
+    gradientY[0][j] = 0;
+
 
 	float y_filter[3][3];
 
@@ -914,7 +928,6 @@ int main(int argc, char** argv)
 	fileToMatrix(image, inFileName, height, width);
 	findMinAndMax(image, height, width, max, min);
 
-	float** medianFilteredImage = medianFilter(image, height, width, 3);
 
 	std::cout << std::endl;
 	std::cout << "*********************************GRAYWORLD COMPARISON*********************************" << std::endl;
@@ -944,6 +957,104 @@ int main(int argc, char** argv)
 	}
 	/*********************************GRAYWORLD COMPARISON*********************************/
 
+  std::cout << std::endl;
+	std::cout << "*********************************MEDIAN FILTER COMPARISON*********************************" << std::endl;
+	std::cout << std::endl;
+
+	/*********************************MEDIAN FILTER COMPARISON*********************************/
+	start = omp_get_wtime();
+	float** medianFilteredImage = medianFilter(image, height, width, 3);
+	dur = omp_get_wtime() - start;
+	std::cout << "Median Filter Sequential: " << dur << std::endl;
+	start = omp_get_wtime();
+	float** parMedianFilteredImage = par_medianFilter(image, height, width, 3);
+	dur = omp_get_wtime() - start;
+	std::cout << "Median Filter Parallel: " << dur << std::endl;
+	start = omp_get_wtime();
+	float** simdMedianFilteredImage = simd_medianFilter(image, height, width, 3);
+	dur = omp_get_wtime() - start;
+	std::cout << "Median Filter SIMD: " << dur << std::endl;
+	std::cout << "MedianFilter Seq - Par True: " << checkEquality(medianFilteredImage, parMedianFilteredImage, height, width) << std::endl;
+	std::cout << "MedianFilter Seq - SIMD True: " << checkEquality(medianFilteredImage, simdMedianFilteredImage, height, width) << std::endl;
+	if (writeOut == 1)
+	{
+		matrixToFile(outFileName + "_seqMedianFilter.txt", medianFilteredImage, height, width);
+		matrixToFile(outFileName + "_parMedianFilter.txt", parMedianFilteredImage, height, width);
+		matrixToFile(outFileName + "_simdMedianFilter.txt", simdMedianFilteredImage, height, width);
+	}
+	/*********************************MEDIAN FILTER COMPARISON*********************************/
+
+  std::cout << std::endl;
+	std::cout << "*********************************SOBEL FILTER X COMPARISON*********************************" << std::endl;
+	std::cout << std::endl;
+
+	/*********************************SOBEL FILTER X COMPARISON*********************************/
+	start = omp_get_wtime();
+	float** xFilteredImage = sobelFilterX(image, height, width);
+	dur = omp_get_wtime() - start;
+	std::cout << "Sobel Filter X Sequential: " << dur << std::endl;
+	start = omp_get_wtime();
+	float** parXFilteredImage = par_sobelFilterX(image, height, width);
+	dur = omp_get_wtime() - start;
+	std::cout << "Sobel Filter X Parallel: " << dur << std::endl;
+
+	std::cout << "Sobel Filter X Seq - Par True: " << checkEquality(xFilteredImage, parXFilteredImage, height, width) << std::endl;
+ 
+	if (writeOut == 1)
+	{
+		matrixToFile(outFileName + "_seqSobelFilterX.txt", xFilteredImage, height, width);
+		matrixToFile(outFileName + "_parSobelFilterX.txt", parXFilteredImage, height, width);
+	}
+	/*********************************SOBEL FILTER X COMPARISON*********************************/
+ 
+   std::cout << std::endl;
+	std::cout << "*********************************SOBEL FILTER Y COMPARISON*********************************" << std::endl;
+	std::cout << std::endl;
+
+	/*********************************SOBEL FILTER Y COMPARISON*********************************/
+	start = omp_get_wtime();
+	float** yFilteredImage = sobelFilterY(image, height, width);
+	dur = omp_get_wtime() - start;
+	std::cout << "Sobel Filter Y Sequential: " << dur << std::endl;
+	start = omp_get_wtime();
+	float** parYFilteredImage = par_sobelFilterY(image, height, width);
+	dur = omp_get_wtime() - start;
+	std::cout << "Sobel Filter Y Parallel: " << dur << std::endl;
+
+	std::cout << "Sobel Filter Y Seq - Par True: " << checkEquality(yFilteredImage, parYFilteredImage, height, width) << std::endl;
+ 
+	if (writeOut == 1)
+	{
+		matrixToFile(outFileName + "_seqSobelFilterY.txt", yFilteredImage, height, width);
+		matrixToFile(outFileName + "_parSobelFilterY.txt", parYFilteredImage, height, width);
+	}
+	/*********************************SOBEL FILTER Y COMPARISON*********************************/
+ 
+   std::cout << std::endl;
+	std::cout << "*********************************SOBEL EDGE DETECTION COMPARISON*********************************" << std::endl;
+	std::cout << std::endl;
+
+	/*********************************SOBEL EDGE DETECTION COMPARISON*********************************/
+	start = omp_get_wtime();
+	float** edgeDetectionImage = sobelEdgeDetection(xFilteredImage, yFilteredImage, height, width, 50);
+	dur = omp_get_wtime() - start;
+	std::cout << "Sobel Edge Detection Sequential: " << dur << std::endl;
+	start = omp_get_wtime();
+	float** parEdgeDetectionImage = par_sobelEdgeDetection(xFilteredImage, yFilteredImage, height, width, 50);
+	dur = omp_get_wtime() - start;
+	std::cout << "Sobel Edge Detection Parallel: " << dur << std::endl;
+
+	std::cout << "Sobel Edge Detection Seq - Par True: " << checkEquality(edgeDetectionImage, parEdgeDetectionImage, height, width) << std::endl;
+ 
+	if (writeOut == 1)
+	{
+		matrixToFile(outFileName + "_seqEdgeDetection.txt", edgeDetectionImage, height, width);
+		matrixToFile(outFileName + "_parEdgeDetection.txt", parEdgeDetectionImage, height, width);
+	}
+	/*********************************SOBEL EDGE DETECTIONCOMPARISON*********************************/
+ 
+ 
+ 
 
 	std::cout << std::endl;
 	std::cout << "*********************************REFLECTION COMPARISON*********************************" << std::endl;
