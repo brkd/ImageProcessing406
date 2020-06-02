@@ -5,8 +5,8 @@
 #include <cmath>
 
 
-#define TILE_W 32
-#define TILE_H 32
+#define TILE_W 32 //Decrease to increment block count and decrement thread count
+#define TILE_H 32 //Decrease to increment block count and decrement thread count
 #define R 1
 #define D ((R*2)+1)
 #define S (D*D)
@@ -377,7 +377,7 @@ int main(int argc, char** argv)
    int BLOCK_W = (int)std::ceil((float)height / TILE_W);
 
    dim3 deviceBlocks(BLOCK_H, BLOCK_W);
-   dim3 deviceThreads(32, 32);
+   dim3 deviceThreads(TILE_H, TILE_W);
 
    int *height_d, *width_d;
    float time = 0;
@@ -391,7 +391,6 @@ int main(int argc, char** argv)
    cudaMalloc(&deviceImage, image_size);
    cudaMemcpy(deviceImage, hostFlattened, image_size, cudaMemcpyHostToDevice);
 
-   int BLOCK_C = height*width;
 
    //*************************LINSCALE******************************//
    
