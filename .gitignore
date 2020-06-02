@@ -6,3 +6,6 @@ TestResults/
 pyout/
 GPU/in/
 GPU/out/
+newsol
+solution
+*.txt

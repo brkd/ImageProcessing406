@@ -164,91 +164,134 @@ double getAverage(unsigned char** image, int height, int width)
 }
 
 
-__global__ void linearScale(float* image, float* outImage, int* a, int* width, float* b)
+__global__ void linearScale(float* image, float* outImage, int* a, int* width, int* height, float* b)
 {
-   unsigned char u = image[blockIdx.x];
-   outImage[blockIdx.x] = (*b) * (u + (*a));
+   int im_y = blockIdx.y * blockDim.y + threadIdx.y;
+   int im_x = blockIdx.x * blockDim.x + threadIdx.x; 	
+
+   int index = im_y * (*width) + im_x;
+
+   if(index >= (*height) * (*width))
+      return;
+
+   float u = image[index];
+   outImage[index] = (*b) * (u + (*a));
 }
 
 
-__global__ void grayWorld(float* image, float* outImage, double* scalingValue)
+__global__ void grayWorld(float* image, float* outImage, double* scalingValue, int* height, int* width)
 {
-	float u = image[blockIdx.x];
-	outImage[blockIdx.x] = u * *scalingValue;
+   int im_y = blockIdx.y * blockDim.y + threadIdx.y;
+   int im_x = blockIdx.x * blockDim.x + threadIdx.x; 	
+
+   int index = im_y * (*width) + im_x;
+
+   if(index >= (*height) * (*width))
+      return;
+
+   float u = image[index];
+   outImage[index] = u * *scalingValue;
 }
 
-__global__ void reflection(float* image, float* outImage, int* width)
+__global__ void reflection(float* image, float* outImage, int* height, int* width)
 {
-	//blockIdx.x = i * *width + j
-	int i = blockIdx.x / *width;
-	int j = blockIdx.x - i * *width;  
+   int im_y = blockIdx.y * blockDim.y + threadIdx.y;
+   int im_x = blockIdx.x * blockDim.x + threadIdx.x; 	
 
-	int reflectedIndex = i * *width + (*width - j - 1);
-	float u = image[reflectedIndex];
-	outImage[blockIdx.x] = u;
+   int index = im_y * (*width) + im_x;
+
+   if(index >= (*height) * (*width))
+      return;
+
+   int i = index / *width;
+   int j = index - i * *width;
+
+   int reflectedIndex = i * *width + (*width - j - 1);
+   float u = image[reflectedIndex];
+   outImage[index] = u;
 }
 
-__global__ void orderedDithering(float* image, float* outImage, int* width)
+__global__ void orderedDithering(float* image, float* outImage, int* height, int* width)
 {
-	//blockIdx.x = i * *width + j
-	int i = blockIdx.x / *width;
-	int j = blockIdx.x - i * *width; 
+   int im_y = blockIdx.y * blockDim.y + threadIdx.y;
+   int im_x = blockIdx.x * blockDim.x + threadIdx.x; 	
 
-	float u = image[blockIdx.x];
+   int index = im_y * (*width) + im_x;
 
-	if(i%2 == 0)
+   if(index >= (*height) * (*width))
+      return;
+	
+   int i = index / *width;
+   int j = index - i * *width; 
+
+   float u = image[index];
+
+   if(i%2 == 0)
+   {
+   	if(j%2 == 0)
 	{
-		if(j%2 == 0)
-		{
-			if(u > 192)
-				outImage[blockIdx.x] = 255;
-			else
-				outImage[blockIdx.x] = 0;
-		}
+ 		if(u > 192)
+			outImage[index] = 255;
 		else
-		{
-			if(u > 64)
-				outImage[blockIdx.x] = 255;
-			else
-				outImage[blockIdx.x] = 0;
-		}
+			outImage[index] = 0;
 	}
 	else
 	{
-		if(j%2 == 0)
-			outImage[blockIdx.x] = 255;
-
+		if(u > 64)
+			outImage[index] = 255;
 		else
-		{
-			if(u > 128)
-				outImage[blockIdx.x] = 255;
-			else
-				outImage[blockIdx.x] = 0;
-		}
+			outImage[index] = 0;
 	}
+   }
+   else
+   {
+	if(j%2 == 0)
+		outImage[index] = 255;
+	else
+	{
+		if(u > 128)
+			outImage[index] = 255;
+		else
+			outImage[index] = 0;
+	}
+   }
 
 }
 
 __global__ void rotate90(float* result, float* image, int* height, int* width)
 {
-	//blockIdx.x = i * *width + j
-	int i = blockIdx.x / *width;
-	int j = blockIdx.x - i * *width; 
+   int im_y = blockIdx.y * blockDim.y + threadIdx.y;
+   int im_x = blockIdx.x * blockDim.x + threadIdx.x; 	
 
-	int rotatedIndex = (*width - j - 1) * *height + i;
-	float u = image[blockIdx.x];
-	result[rotatedIndex] = u;
+   int index = im_y * (*width) + im_x;
+
+   if(index >= (*height) * (*width))
+      return;
+
+   int i = index / *width;
+   int j = index - i * *width; 
+
+   int rotatedIndex = (*width - j - 1) * *height + i;
+   float u = image[index];
+   result[rotatedIndex] = u;
 }
 
 __global__ void rotate180(float* result, float* image, int* height, int* width)
 {
-	//blockIdx.x = i * *width + j
-	int i = blockIdx.x / *width;
-	int j = blockIdx.x - i * *width; 
+   int im_y = blockIdx.y * blockDim.y + threadIdx.y;
+   int im_x = blockIdx.x * blockDim.x + threadIdx.x; 	
 
-	int rotatedIndex = (*height - i - 1) * *width + (*width - j - 1);
-	float u = image[rotatedIndex];
-	result[blockIdx.x] = u;
+   int index = im_y * (*width) + im_x;
+
+   if(index >= (*height) * (*width))
+      return;
+
+   int i = index / *width;
+   int j = index - i * *width; 
+
+   int rotatedIndex = (*height - i - 1) * *width + (*width - j - 1);
+   float u = image[rotatedIndex];
+   result[index] = u;
 }
 
 
@@ -263,10 +306,11 @@ __global__ void medianFilter(unsigned char* image, unsigned char* outImage, int*
       return;
    }
 
-
    int index = im_y * (*width) + im_x;//(((blockIdx.x) + 1) * (*width)) + threadIdx.x + 1;
+
    if(index >= (*height) * (*width))
       return;
+
    int image_index;
    
    __shared__ unsigned char window[S];
@@ -329,6 +373,12 @@ int main(int argc, char** argv)
    cudaEventCreate(&start);
    cudaEventCreate(&stop);
 
+   int BLOCK_H = (int)std::ceil((float)width / TILE_H);
+   int BLOCK_W = (int)std::ceil((float)height / TILE_W);
+
+   dim3 deviceBlocks(BLOCK_H, BLOCK_W);
+   dim3 deviceThreads(32, 32);
+
    int *height_d, *width_d;
    float time = 0;
 
@@ -359,7 +409,16 @@ int main(int argc, char** argv)
    cudaMemcpy(d_a, &a, sizeof(int), cudaMemcpyHostToDevice);
    cudaMemcpy(d_b, &b, sizeof(float), cudaMemcpyHostToDevice);
 
-   linearScale<<<BLOCK_C, 1>>>(deviceImage, linearScaleResult, d_a, width_d, d_b);
+   cudaEventRecord(start, 0);
+
+   linearScale<<<deviceBlocks, deviceThreads>>>(deviceImage, linearScaleResult, d_a, width_d, height_d, d_b);
+
+   cudaEventRecord(stop, 0);
+   cudaEventSynchronize(stop);
+   cudaEventElapsedTime(&time, start, stop);
+
+   std::cout << "LinScale time: " << time/1000 << "sec" << std::endl;
+
    cudaMemcpy(hostResult, linearScaleResult, image_size, cudaMemcpyDeviceToHost);
 
    if(writeOut)
@@ -377,20 +436,18 @@ int main(int argc, char** argv)
 
    //*************************GRAYWORLD******************************// 
 
-   double average = getAverage(hostImage, height, width), *d_average;
+   double average = getAverage(hostImage, height, width);
+   double scalingValue = 127.5 / average, *d_scale;;
    float* grayWorldResult;
 
    cudaMalloc(&grayWorldResult, image_size);
 
-   cudaMalloc((void**)&d_average, sizeof(double));
-   cudaMemcpy(d_average, &average, sizeof(double), cudaMemcpyHostToDevice);
-
-   //cudaMalloc((void**)&deviceImage, image_size);
-   //cudaMemcpy(deviceImage, hostFlattened, image_size, cudaMemcpyHostToDevice);	
+   cudaMalloc((void**)&d_scale, sizeof(double));
+   cudaMemcpy(d_scale, &scalingValue, sizeof(double), cudaMemcpyHostToDevice);
 
    cudaEventRecord(start, 0);
   
-   grayWorld<<<BLOCK_C, 1>>>(deviceImage, grayWorldResult, d_average);
+   grayWorld<<<deviceBlocks, deviceThreads>>>(deviceImage, grayWorldResult, d_scale, height_d, width_d);
    
    cudaEventRecord(stop, 0);
    cudaEventSynchronize(stop);
@@ -398,7 +455,7 @@ int main(int argc, char** argv)
    
    cudaMemcpy(hostResult, grayWorldResult, image_size, cudaMemcpyDeviceToHost);
 
-    std::cout << "GrayWorld time: " << time/1000 << "sec" << std::endl;
+   std::cout << "GrayWorld time: " << time/1000 << "sec" << std::endl;
 
    if(writeOut)
    {
@@ -407,21 +464,18 @@ int main(int argc, char** argv)
    }
 
    cudaFree(grayWorldResult);
-   cudaFree(d_average);
+   cudaFree(d_scale);
 
    //*************************GRAYWORLD******************************// 
       
   //REFLECTION
   
-   //cudaMalloc((void**)&deviceImage, image_size);
-   //cudaMemcpy(deviceImage, hostFlattened, image_size, cudaMemcpyHostToDevice);	
-
    float* reflectionResult;
    cudaMalloc(&reflectionResult, image_size);
 
    cudaEventRecord(start, 0);
 
-   reflection<<<BLOCK_C, 1>>>(deviceImage, reflectionResult, width_d);
+   reflection<<<deviceBlocks, deviceThreads>>>(deviceImage, reflectionResult, height_d, width_d);
    
    cudaEventRecord(stop, 0);
    cudaEventSynchronize(stop);
@@ -441,15 +495,12 @@ int main(int argc, char** argv)
 
    //ORDERED DITHERING
   
-   //cudaMalloc((void**)&deviceImage, image_size);
-   //cudaMemcpy(deviceImage, hostFlattened, image_size, cudaMemcpyHostToDevice);	
-
    float* orderedDitheringResult;
    cudaMalloc(&orderedDitheringResult, image_size);
 
    cudaEventRecord(start, 0);
 
-   orderedDithering<<<BLOCK_C, 1>>>(deviceImage, orderedDitheringResult, width_d);
+   orderedDithering<<<deviceBlocks, deviceThreads>>>(deviceImage, orderedDitheringResult, height_d, width_d);
    
    cudaEventRecord(stop, 0);
    cudaEventSynchronize(stop);
@@ -470,15 +521,11 @@ int main(int argc, char** argv)
    //ROTATE90
    float* result90;
    
-   //cudaMalloc((void**)&deviceImage, image_size);
-   //cudaMemcpy(deviceImage, hostFlattened, image_size, cudaMemcpyHostToDevice);	
-  
    cudaMalloc((void**)&result90, image_size);
-   //cudaMemcpy(result90, hostFlattened, image_size, cudaMemcpyHostToDevice);	
 
    cudaEventRecord(start, 0);
 
-   rotate90<<<BLOCK_C, 1>>>(result90, deviceImage, height_d, width_d);
+   rotate90<<<deviceBlocks, deviceThreads>>>(result90, deviceImage, height_d, width_d);
    
    cudaEventRecord(stop, 0);
    cudaEventSynchronize(stop);
@@ -499,15 +546,11 @@ int main(int argc, char** argv)
    //ROTATE180
    float* result180;
    
-   //cudaMalloc((void**)&deviceImage, image_size);
-   //cudaMemcpy(deviceImage, hostFlattened, image_size, cudaMemcpyHostToDevice);	
-  
    cudaMalloc((void**)&result180, image_size);
-   //cudaMemcpy(result180, hostFlattened, image_size, cudaMemcpyHostToDevice);	
 
    cudaEventRecord(start, 0);
 
-   rotate180<<<BLOCK_C, 1>>>(result180, deviceImage, height_d, width_d);
+   rotate180<<<deviceBlocks, deviceThreads>>>(result180, deviceImage, height_d, width_d);
    
    cudaEventRecord(stop, 0);
    cudaEventSynchronize(stop);
@@ -536,13 +579,6 @@ int main(int argc, char** argv)
 
    cudaMalloc(&char_deviceImage, charImage_size);
    cudaMemcpy(char_deviceImage, char_hostFlattened, charImage_size, cudaMemcpyHostToDevice);
-
-   int BLOCK_H = (int)std::ceil((float)width / TILE_H);
-   int BLOCK_W = (int)std::ceil((float)height / TILE_W);
-   std::cout << BLOCK_H << " " << BLOCK_W << std::endl;
-
-   dim3 deviceBlocks(BLOCK_H, BLOCK_W);
-   dim3 deviceThreads(32, 32);
 
    cudaEventRecord(start);
    medianFilter<<<deviceBlocks, deviceThreads>>>(char_deviceImage, outImage, height_d, width_d);
