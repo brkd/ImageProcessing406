@@ -1,0 +1,104 @@
+LinScale time: 0.0051063sec
+GrayWorld time: 0.00502259sec
+Reflection time: 0.00533446sec
+Ordered Dithering time: 0.00549536sec
+Rotation 90 time: 0.0110015sec
+Rotation 180 time: 0.00493286sec
+Median Filter Time: 0.0219551
+
+
+
+
+LinScale time: 0.00513008sec
+GrayWorld time: 0.00493222sec
+Reflection time: 0.00540323sec
+Ordered Dithering time: 0.00543142sec
+Rotation 90 time: 0.0109546sec
+Rotation 180 time: 0.00534794sec
+Median Filter Time: 0.021573
+
+
+
+LinScale time: 0.00509594sec
+GrayWorld time: 0.00496051sec
+Reflection time: 0.00528sec
+Ordered Dithering time: 0.00537987sec
+Rotation 90 time: 0.0109061sec
+Rotation 180 time: 0.00487613sec
+Median Filter Time: 0.0211082
+
+
+LinScale time: 0.00508512sec
+GrayWorld time: 0.00495789sec
+Reflection time: 0.00527766sec
+Ordered Dithering time: 0.00538253sec
+Rotation 90 time: 0.0108988sec
+Rotation 180 time: 0.00487453sec
+Median Filter Time: 0.0210847
+
+
+
+LinScale time: 0.00508934sec
+GrayWorld time: 0.00496048sec
+Reflection time: 0.00527386sec
+Ordered Dithering time: 0.00547126sec
+Rotation 90 time: 0.0134008sec
+Rotation 180 time: 0.00493347sec
+Median Filter Time: 0.0246327
+
+
+
+
+LinScale time: 0.00509034sec
+GrayWorld time: 0.00495674sec
+Reflection time: 0.00528266sec
+Ordered Dithering time: 0.00537939sec
+Rotation 90 time: 0.010908sec
+Rotation 180 time: 0.00487718sec
+Median Filter Time: 0.021089
+
+
+
+LinScale time: 0.00508947sec
+GrayWorld time: 0.00495347sec
+Reflection time: 0.00527194sec
+Ordered Dithering time: 0.00538285sec
+Rotation 90 time: 0.0109126sec
+Rotation 180 time: 0.00487715sec
+Median Filter Time: 0.0211017
+
+
+LinScale time: 0.00513309sec
+GrayWorld time: 0.00501283sec
+Reflection time: 0.00531526sec
+Ordered Dithering time: 0.00541898sec
+Rotation 90 time: 0.0109278sec
+Rotation 180 time: 0.00487466sec
+Median Filter Time: 0.0210955
+
+
+LinScale time: 0.00511632sec
+GrayWorld time: 0.00494198sec
+Reflection time: 0.00529766sec
+Ordered Dithering time: 0.00538179sec
+Rotation 90 time: 0.0108942sec
+Rotation 180 time: 0.00501789sec
+Median Filter Time: 0.0336389
+
+
+LinScale time: 0.00510813sec
+GrayWorld time: 0.00496134sec
+Reflection time: 0.00526992sec
+Ordered Dithering time: 0.00537914sec
+Rotation 90 time: 0.0109003sec
+Rotation 180 time: 0.00489018sec
+Median Filter Time: 0.0210856
+
+
+
+
+
+
+
+
+
