@@ -306,7 +306,7 @@ __global__ void medianFilter(unsigned char* image, unsigned char* outImage, int*
       return;
    }
 
-   int index = im_y * (*width) + im_x;//(((blockIdx.x) + 1) * (*width)) + threadIdx.x + 1;
+   int index = im_y * (*width) + im_x;
 
    if(index >= (*height) * (*width))
       return;
@@ -422,7 +422,7 @@ int main(int argc, char** argv)
 
    if(writeOut)
    {
-      outFileName = "CUDA_linear_scale_.txt"; //+ inFileName;
+      outFileName = "CUDA_linear_scale_.txt";
       matrixToFile(outFileName, hostResult, height, width);
    }
 
@@ -458,7 +458,7 @@ int main(int argc, char** argv)
 
    if(writeOut)
    {
-      outFileName = "CUDA_gray_world_.txt"; // + inFileName; 
+      outFileName = "CUDA_gray_world_.txt";
       matrixToFile(outFileName, hostResult, height, width);
    }
 
@@ -486,7 +486,7 @@ int main(int argc, char** argv)
 
    if(writeOut)
    {
-      outFileName = "CUDA_reflection_.txt"; //+ inFileName; 
+      outFileName = "CUDA_reflection_.txt";
       matrixToFile(outFileName, hostResult, height, width);
    }
 
@@ -511,7 +511,7 @@ int main(int argc, char** argv)
     
    if(writeOut)
    {
-      outFileName = "CUDA_dithering_.txt"; //+ inFileName; 
+      outFileName = "CUDA_dithering_.txt";
       matrixToFile(outFileName, hostResult, height, width);
    }
  
@@ -536,7 +536,7 @@ int main(int argc, char** argv)
 
    if(writeOut)
    {
-      outFileName = "CUDA_rotate_90_.txt"; //+ inFileName; 
+      outFileName = "CUDA_rotate_90_.txt";
       matrixToFile(outFileName, hostResult, width, height);
    }
 
@@ -561,7 +561,7 @@ int main(int argc, char** argv)
 
    if(writeOut)
    {
-      outFileName = "CUDA_rotate_180_.txt"; // + inFileName; 
+      outFileName = "CUDA_rotate_180_.txt";
       matrixToFile(outFileName, hostResult, height, width);
    }
 
@@ -594,7 +594,7 @@ int main(int argc, char** argv)
 
    if(writeOut)
    {
-      outFileName = "CUDA_median_filter_.txt"; //+ inFileName; 
+      outFileName = "CUDA_median_filter_.txt";
       matrixToFile(outFileName, charResult, height, width);
    }
 
